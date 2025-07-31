@@ -195,7 +195,7 @@ def main():
     situation = st.text_area(
         "situation_input", 
         height=150, 
-        placeholder="예시) 중요한 발표 중에 갑자기 머릿속이 하얘지고 준비한 내용이 기억나지 않았습니다. 당황해서 말을 더듬기 시작했습니다.",
+        placeholder="예시) 축구 경기 막판, 결정적인 페널티킥을 차야 하는 상황입니다. '이걸 놓치면 우리 팀이 진다'는 생각에 다리가 무거워지고 심장이 너무 빨리 뜁니다.",
         label_visibility="collapsed"
     )
 
