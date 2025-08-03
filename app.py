@@ -18,14 +18,19 @@ def get_refocus_plan_from_gemini(api_key, situation):
     prompt = f"""
         당신은 선수의 심리를 코칭하는 전문 스포츠 심리학자입니다.
 
-        '재집중 계획(Refocusing Plan)'은 시합 중 예상치 못한 일이 일어날 때를 대비해 미리 대비책을 마련해두는 것입니다. 집중은 과거(화, 불만)나 미래(걱정)가 아닌 '현재(present)'에 해야 합니다. 훌륭한 선수들은 모두 자신만의 재집중 계획을 갖고 있습니다. 재집중 계획은 '결과목표'와 '과정목표'로 구성됩니다.
+        '재집중 계획(Refocusing Plan)'은 선수가 예상치 못한 상황에 부딪혔을 때, 부정적인 생각의 고리를 끊고 현재에 다시 집중하도록 돕는 구체적인 행동 계획입니다.
 
-        - '결과목표(Outcome Goal)'는 상황을 인지적으로 재해석하여 마음을 다스리는 생각의 목표입니다. '화가 나는 것은 과거의 일일 뿐, 도움이 안 된다'와 같이 이성적인 문장으로 제시해야 합니다.
-        - '과정목표(Process Goal)'는 즉시 실행할 수 있는 짧고 명료한 행동의 목표입니다. '물 마시고, 스트레칭하자' 또는 '과거다. 다시 집중!'처럼 구체적인 행동 단서를 제시해야 합니다.
+        이제 사용자가 입력한 상황을 분석하여 '재집중 계획'을 세워주세요. 결과물은 반드시 [상황 요약], [결과목표], [과정목표] 세 부분으로 구성되어야 합니다.
 
-        이제 다음 사용자가 입력한 상황에 맞는 '결과목표'와 '과정목표' 그리고 각각에 대한 간단한 해설을 생성해주세요. 응답은 반드시 한국어로 해주세요.
+        1.  **[상황 요약]**: 사용자가 입력한 '상황'을 "어떤 상황에서 어떤 감정을 느끼고 있다"는 형식으로 한 문장으로 명확하게 요약해주세요.
+        2.  **[결과목표]**: 요약된 상황을 바탕으로, 선수가 가져야 할 인지적 관점의 전환, 즉 '생각의 목표'를 이성적인 문장으로 제시해주세요.
+        3.  **[과정목표]**: 선수가 즉시 실행할 수 있는 구체적이고 명료한 '행동의 목표'를 제시해주세요.
 
-        응답 형식은 아래와 같이 반드시 지켜주세요:
+        각 목표 뒤에는 간단한 해설을 덧붙여주세요.
+
+        응답 형식은 아래 예시를 반드시 지켜주세요:
+        [상황 요약]
+        {{AI가 생성한 상황 요약}}
         [결과목표]
         {{생성된 결과목표}}
         [결과목표 해설]
@@ -35,7 +40,8 @@ def get_refocus_plan_from_gemini(api_key, situation):
         [과정목표 해설]
         {{생성된 과정목표 해설}}
 
-        상황: "{situation}"
+        ---
+        사용자 입력 상황: "{situation}"
     """
 
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={api_key}"
@@ -64,6 +70,10 @@ def display_and_save_card(plan):
     """
     card_html = f"""
     <div id="refocus-plan-card">
+        <div class="result-card when-card">
+            <h3>1. When (상황 및 심리 요약)</h3>
+            <p>{plan['when_summary']}</p>
+        </div>
         <div class="result-card outcome-card">
             <h3>2. 결과목표 (생각의 전환)</h3>
             <p>{plan['outcome_goal']}</p>
@@ -93,6 +103,10 @@ def display_and_save_card(plan):
             background-color: #f8f9fa;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }}
+        .when-card {{
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }}
         .outcome-card {{
             background-color: #e0f2fe;
             border-color: #7dd3fc;
@@ -105,8 +119,8 @@ def display_and_save_card(plan):
             font-family: 'Noto Sans KR', sans-serif;
             font-weight: 700;
             margin-top: 0;
-            color: #0056b3;
-            border-bottom: 2px solid #0056b3;
+            color: #1f2937;
+            border-bottom: 2px solid #6b7280;
             padding-bottom: 10px;
         }}
         .result-card p {{
@@ -166,7 +180,7 @@ def display_and_save_card(plan):
     }}
     </script>
     """
-    st.components.v1.html(card_html, height=600, scrolling=True)
+    st.components.v1.html(card_html, height=800, scrolling=True)
 
 # --- 메인 애플리케이션 로직 ---
 def main():
@@ -211,12 +225,15 @@ def main():
                     if result_text.startswith("오류:") or result_text.startswith("API 요청 중"):
                         raise ValueError(result_text)
 
+                    # 응답 텍스트 파싱
+                    when_summary = result_text.split('[상황 요약]')[1].split('[결과목표]')[0].strip()
                     outcome_goal = result_text.split('[결과목표]')[1].split('[결과목표 해설]')[0].strip()
                     outcome_explanation = result_text.split('[결과목표 해설]')[1].split('[과정목표]')[0].strip()
                     process_goal = result_text.split('[과정목표]')[1].split('[과정목표 해설]')[0].strip()
                     process_explanation = result_text.split('[과정목표 해설]')[1].strip()
                     
                     st.session_state.generated_plan = {
+                        "when_summary": when_summary,
                         "outcome_goal": outcome_goal,
                         "outcome_explanation": outcome_explanation,
                         "process_goal": process_goal,
