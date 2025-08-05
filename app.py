@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import re
+import os
 
 # --- API 호출 함수 ---
 def get_refocus_plan_from_gemini(api_key, situation):
@@ -195,12 +196,10 @@ def main():
     st.markdown("예상치 못한 상황에 흔들리지 않도록, 현재에 집중하는 방법을 찾아보세요.")
     st.divider()
 
-    # --- API 키 설정 (Secrets에서만 가져오기) ---
-    api_key = None
-    try:
-        api_key = st.secrets["GEMINI_API_KEY"]
-    except (FileNotFoundError, KeyError):
-        st.error("Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다. 앱 관리자에게 문의하거나, 앱 설정에서 API 키를 추가해주세요.")
+    # --- API 키 설정 (환경 변수에서 가져오기) ---
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        st.error("환경 변수 'GEMINI_API_KEY'가 설정되지 않았습니다. 앱 관리자에게 문의하세요.")
         st.stop()
 
     # --- 사용자 입력 ---
