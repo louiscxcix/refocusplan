@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 # --- 이미지 파일을 Base64로 인코딩하는 함수 ---
-def img_to_base64(image_path):
+def img_to_base_64(image_path):
     """로컬 이미지 파일을 Base64 문자열로 변환합니다."""
     try:
         with open(image_path, "rb") as img_file:
@@ -84,10 +84,12 @@ def apply_ui_styles():
                 background-color: #f0f2f5;
             }
             
-            /* Streamlit의 기본 상단 여백 제거 */
-            div.block-container {
-                padding-top: 1.5rem;
-                padding-bottom: 1.5rem;
+            /* Streamlit 헤더와 기본 여백 완전히 제거 */
+            #root > div:nth-child(1) > div.withScreencast > div > div {
+                padding-top: 0rem;
+            }
+            header[data-testid="stHeader"] {
+                display: none;
             }
 
             body, .stTextArea, .stButton>button {
@@ -126,7 +128,7 @@ def apply_ui_styles():
                 font-size: 16px;
                 color: var(--secondary-color);
                 line-height: 24px;
-                margin-bottom: 40px;
+                margin-bottom: 28px; /* 여백 30% 감소 (40px -> 28px) */
             }
             
             /* 텍스트 입력창 스타일 */
@@ -196,11 +198,6 @@ def apply_ui_styles():
                     padding: 1.5rem;
                     border-radius: 20px;
                 }
-                
-                div.block-container {
-                    padding-top: 1rem;
-                    padding-bottom: 1rem;
-                }
             }
         </style>
     """, unsafe_allow_html=True)
@@ -244,7 +241,7 @@ def display_and_save_card(plan):
             padding-bottom: 0;
         }}
         .section-header {{
-            font-size: 12px;
+            font-size: 14px; /* 글씨 크기 증가 */
             font-weight: 400;
             color: var(--gray-color);
             margin-bottom: 4px;
@@ -347,7 +344,7 @@ def main():
         st.session_state.generated_plan = None
 
     icon_path = Path(__file__).parent / "icon.png"
-    icon_base64 = img_to_base64(icon_path)
+    icon_base64 = img_to_base_64(icon_path)
 
     st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
@@ -416,3 +413,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
