@@ -92,7 +92,6 @@ def apply_ui_styles():
                 background-color: white;
                 padding: 2rem;
                 border-radius: 32px;
-                box-shadow: 0 0 0 8px rgba(32, 63, 130, 0.08);
             }
 
             .icon-container {
@@ -111,17 +110,24 @@ def apply_ui_styles():
             }
 
             .title {
-                font-size: 20px;
+                font-size: 24px;
                 font-weight: 700;
                 color: var(--black-color);
-                line-height: 32px;
+                line-height: 36px;
                 margin-bottom: 8px;
             }
             .subtitle {
-                font-size: 13px;
+                font-size: 16px;
                 color: var(--secondary-color);
-                line-height: 20px;
+                line-height: 24px;
                 margin-bottom: 40px;
+            }
+            
+            /* 텍스트 입력창 스타일 */
+            .stTextArea textarea {
+                background-color: #f9fafb;
+                border: 1px solid #D1D5DB;
+                border-radius: 12px;
             }
 
             .section {
@@ -129,6 +135,13 @@ def apply_ui_styles():
                 padding-bottom: 20px;
                 margin-bottom: 20px;
             }
+            
+            .last-section {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+
             .section-header {
                 font-size: 12px;
                 font-weight: 400;
@@ -176,7 +189,6 @@ def apply_ui_styles():
                 .main-container {
                     padding: 1.5rem;
                     border-radius: 20px;
-                    box-shadow: none;
                 }
             }
         </style>
@@ -203,7 +215,7 @@ def display_and_save_card(plan):
             <p class="explanation-text">{plan['outcome_explanation']}</p>
         </div>
 
-        <div style="padding-bottom: 20px; margin-bottom: 20px;">
+        <div class="section last-section">
             <p class="section-header">과정 목표</p>
             <p class="goal-text">"{highlighted_process}"</p>
             <p class="explanation-text">{plan['process_explanation']}</p>
@@ -283,7 +295,7 @@ def main():
       st.markdown('</div>', unsafe_allow_html=True)
 
 
-    if st.button("결과 저장하기", use_container_width=True):
+    if st.button("나만의 재집중 계획 만들기", use_container_width=True):
         if not situation.strip():
             st.warning("재집중이 필요한 상황을 입력해주세요.")
             st.session_state.generated_plan = None
