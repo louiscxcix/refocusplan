@@ -86,8 +86,7 @@ def apply_ui_styles():
             
             /* Streamlit 헤더와 기본 여백 완전히 제거 */
             div.block-container {
-                padding-top: 2rem !important;
-                padding-bottom: 1.5rem;
+                padding: 2rem 1rem 1.5rem 1rem !important;
             }
             
             header[data-testid="stHeader"] {
@@ -96,12 +95,6 @@ def apply_ui_styles():
 
             body, .stTextArea, .stButton>button {
                 font-family: 'Noto Sans KR', sans-serif;
-            }
-
-            .main-container {
-                background-color: white;
-                padding: 2rem;
-                border-radius: 32px;
             }
 
             .icon-container {
@@ -141,15 +134,9 @@ def apply_ui_styles():
             }
 
             .section {
-                border-bottom: 1px solid var(--divider-color);
+                /* border-bottom 제거 */
                 padding-bottom: 20px;
                 margin-bottom: 20px;
-            }
-            
-            .last-section {
-                border-bottom: none;
-                margin-bottom: 0;
-                padding-bottom: 0;
             }
 
             .section-header {
@@ -196,12 +183,8 @@ def apply_ui_styles():
             
             /* 모바일 반응형 스타일 */
             @media (max-width: 600px) {
-                .main-container {
-                    padding: 1.5rem;
-                    border-radius: 20px;
-                }
                  div.block-container {
-                    padding-top: 1rem !important;
+                    padding: 1rem 1.2rem 1.5rem 1.2rem !important; /* 좌우 여백 살짝 넓힘 */
                 }
             }
         </style>
@@ -229,6 +212,7 @@ def display_and_save_card(plan):
         body {{
             font-family: 'Noto Sans KR', sans-serif;
             margin: 0;
+            background-color: #f0f2f5;
         }}
         .card-container {{
             background-color: white;
@@ -345,26 +329,13 @@ def main():
     st.set_page_config(page_title="재집중 카드 생성기", layout="centered")
     apply_ui_styles()
 
-    st.markdown("""
-        <style>
-            /* 이 CSS는 페이지의 최상단에 주입되어 흰색 막대를 제거합니다. */
-            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
-                padding-top: 0rem;
-            }
-            iframe {
-                margin-top: -50px;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-
     if 'generated_plan' not in st.session_state:
         st.session_state.generated_plan = None
 
     icon_path = Path(__file__).parent / "icon.png"
     icon_base64 = img_to_base_64(icon_path)
 
-    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+    # st.markdown('<div class="main-container">', unsafe_allow_html=True) # 흰색 배경 컨테이너 제거
 
     if icon_base64:
         st.markdown(f"""
@@ -379,7 +350,7 @@ def main():
         api_key = st.secrets["GEMINI_API_KEY"]
     except (FileNotFoundError, KeyError):
         st.error("Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        # st.markdown('</div>', unsafe_allow_html=True) # 컨테이너 제거
         st.stop()
 
     with st.container():
@@ -423,10 +394,9 @@ def main():
                     st.error(f"결과 처리 중 오류가 발생했습니다: {e}")
                     st.session_state.generated_plan = None
     
-    st.markdown('</div>', unsafe_allow_html=True)
+    # st.markdown('</div>', unsafe_allow_html=True) # 컨테이너 제거
 
     if st.session_state.generated_plan:
-        st.write("")
         display_and_save_card(st.session_state.generated_plan)
 
 if __name__ == "__main__":
