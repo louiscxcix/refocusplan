@@ -85,11 +85,13 @@ def apply_ui_styles():
             }
             
             /* Streamlit 헤더와 기본 여백 완전히 제거 */
-            #root > div:nth-child(1) > div.withScreencast > div > div {
-                padding-top: 0rem;
+            div.block-container {
+                padding-top: 2rem !important;
+                padding-bottom: 1.5rem;
             }
+            
             header[data-testid="stHeader"] {
-                display: none;
+                display: none !important;
             }
 
             body, .stTextArea, .stButton>button {
@@ -198,6 +200,9 @@ def apply_ui_styles():
                     padding: 1.5rem;
                     border-radius: 20px;
                 }
+                 div.block-container {
+                    padding-top: 1rem !important;
+                }
             }
         </style>
     """, unsafe_allow_html=True)
@@ -242,7 +247,7 @@ def display_and_save_card(plan):
         }}
         .section-header {{
             font-size: 14px; /* 글씨 크기 증가 */
-            font-weight: 400;
+            font-weight: 700; /* 굵게 변경 */
             color: var(--gray-color);
             margin-bottom: 4px;
         }}
