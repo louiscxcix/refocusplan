@@ -84,6 +84,12 @@ def apply_ui_styles():
                 background-color: #f0f2f5;
             }
             
+            /* Streamlit의 기본 상단 여백 제거 */
+            div.block-container {
+                padding-top: 1.5rem;
+                padding-bottom: 1.5rem;
+            }
+
             body, .stTextArea, .stButton>button {
                 font-family: 'Noto Sans KR', sans-serif;
             }
@@ -190,6 +196,11 @@ def apply_ui_styles():
                     padding: 1.5rem;
                     border-radius: 20px;
                 }
+                
+                div.block-container {
+                    padding-top: 1rem;
+                    padding-bottom: 1rem;
+                }
             }
         </style>
     """, unsafe_allow_html=True)
@@ -201,8 +212,82 @@ def display_and_save_card(plan):
     highlighted_outcome = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['outcome_goal'])
     highlighted_process = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['process_goal'])
 
+    # HTML 컴포넌트 내부에 스타일을 직접 포함하여 iframe 문제를 해결
     card_html = f"""
-    <div id="refocus-plan-card" style="background-color: white; padding: 2rem; border-radius: 32px; font-family: 'Noto Sans KR', sans-serif;">
+    <style>
+        /* 이 컴포넌트에 필요한 스타일만 복사 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        :root {{
+            --primary-color: #2BA7D1;
+            --black-color: #0D1628;
+            --secondary-color: #86929A;
+            --gray-color: #898D99;
+            --divider-color: #F1F1F1;
+        }}
+        body {{
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+        }}
+        .card-container {{
+            background-color: white;
+            padding: 2rem;
+            border-radius: 32px;
+        }}
+        .section {{
+            border-bottom: 1px solid var(--divider-color);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }}
+        .last-section {{
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }}
+        .section-header {{
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--gray-color);
+            margin-bottom: 4px;
+        }}
+        .section-title {{
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--black-color);
+            line-height: 28px;
+            margin-bottom: 12px;
+        }}
+        .goal-text {{
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--black-color);
+            line-height: 28px;
+        }}
+        .goal-text span {{
+            color: var(--primary-color);
+        }}
+        .explanation-text {{
+            font-size: 13px;
+            color: var(--secondary-color);
+            line-height: 20px;
+            margin-top: 12px;
+        }}
+        #save-btn {{
+            width: 100%;
+            padding: 14px;
+            margin-top: 1rem;
+            font-size: 14px;
+            font-weight: 400;
+            color: white;
+            background-color: #2BA7D1;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
+        }}
+    </style>
+
+    <div id="refocus-plan-card" class="card-container">
         <div class="section">
             <p class="section-header">When</p>
             <p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>
@@ -221,8 +306,8 @@ def display_and_save_card(plan):
             <p class="explanation-text">{plan['process_explanation']}</p>
         </div>
     </div>
-    <br>
-    <button id="save-btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 400; color: white; background-color: #2BA7D1; border: none; border-radius: 12px; cursor: pointer; text-align: center; box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);">결과 저장하기</button>
+    
+    <button id="save-btn">결과 저장하기</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
