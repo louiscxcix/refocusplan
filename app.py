@@ -345,6 +345,19 @@ def main():
     st.set_page_config(page_title="재집중 카드 생성기", layout="centered")
     apply_ui_styles()
 
+    st.markdown("""
+        <style>
+            /* 이 CSS는 페이지의 최상단에 주입되어 흰색 막대를 제거합니다. */
+            div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
+                padding-top: 0rem;
+            }
+            iframe {
+                margin-top: -50px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+
     if 'generated_plan' not in st.session_state:
         st.session_state.generated_plan = None
 
@@ -418,4 +431,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
