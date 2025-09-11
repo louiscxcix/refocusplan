@@ -1,20 +1,23 @@
 import streamlit as st
 import requests
 import json
+import base64
+from pathlib import Path
 import re
+
+# --- 이미지 파일을 Base64로 인코딩하는 함수 ---
+def img_to_base64(image_path):
+    """로컬 이미지 파일을 Base64 문자열로 변환합니다."""
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except FileNotFoundError:
+        st.warning(f"아이콘 파일을 찾을 수 없습니다: {image_path}. 아이콘 없이 앱을 실행합니다.")
+        return None
 
 # --- API 호출 함수 ---
 def get_refocus_plan_from_gemini(api_key, situation):
-    """
-    Gemini API를 호출하여 재집중 계획을 생성합니다.
-
-    Args:
-        api_key (str): Gemini API 키.
-        situation (str): 사용자가 입력한 상황 텍스트.
-
-    Returns:
-        str: API로부터 받은 텍스트 응답.
-    """
+    """Gemini API를 호출하여 재집중 계획을 생성합니다."""
     prompt = f"""
         당신은 선수의 심리를 코칭하는 전문 스포츠 심리학자입니다.
 
@@ -26,7 +29,8 @@ def get_refocus_plan_from_gemini(api_key, situation):
         2.  **[결과목표]**: 요약된 상황을 바탕으로, 선수가 가져야 할 인지적 관점의 전환, 즉 '생각의 목표'를 이성적인 문장으로 제시해주세요.
         3.  **[과정목표]**: 선수가 즉시 실행할 수 있는 구체적이고 명료한 '행동의 목표'를 제시해주세요.
 
-        각 목표 뒤에는 간단한 해설을 덧붙여주세요.
+        - 중요: 결과목표와 과정목표에서 가장 핵심적인 키워드나 구절을 Markdown 볼드체 형식(`**키워드**`)으로 감싸서 강조해주세요.
+        - 각 목표 뒤에는 간단한 해설을 덧붙여주세요.
 
         응답 형식은 아래 예시를 반드시 지켜주세요:
         [상황 요약]
@@ -43,16 +47,13 @@ def get_refocus_plan_from_gemini(api_key, situation):
         ---
         사용자 입력 상황: "{situation}"
     """
-
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={api_key}"
     headers = {'Content-Type': 'application/json'}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
-
     try:
         response = requests.post(api_url, headers=headers, data=json.dumps(data), timeout=120)
         response.raise_for_status()
         result = response.json()
-        
         if 'candidates' in result and result['candidates']:
             part = result['candidates'][0].get('content', {}).get('parts', [{}])[0]
             return part.get('text', '오류: 응답에서 텍스트를 찾을 수 없습니다.')
@@ -63,94 +64,153 @@ def get_refocus_plan_from_gemini(api_key, situation):
     except Exception as e:
         return f"알 수 없는 오류가 발생했습니다: {e}"
 
-# --- 결과 표시 및 이미지 저장 컴포넌트 함수 ---
+# --- UI 스타일링 및 컴포넌트 함수 ---
+def apply_ui_styles():
+    """앱 전체에 적용될 CSS 스타일을 정의합니다."""
+    st.markdown("""
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+            
+            :root {
+                --primary-color: #2BA7D1;
+                --black-color: #0D1628;
+                --secondary-color: #86929A;
+                --gray-color: #898D99;
+                --divider-color: #F1F1F1;
+                --icon-bg-color: rgba(12, 124, 162, 0.04);
+            }
+
+            .stApp {
+                background-color: #f0f2f5;
+            }
+            
+            body, .stTextArea, .stButton>button {
+                font-family: 'Noto Sans KR', sans-serif;
+            }
+
+            .main-container {
+                background-color: white;
+                padding: 2rem;
+                border-radius: 32px;
+                box-shadow: 0 0 0 8px rgba(32, 63, 130, 0.08);
+            }
+
+            .icon-container {
+                width: 68px;
+                height: 68px;
+                background-color: var(--icon-bg-color);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+            }
+            .icon-container img {
+                width: 52px;
+                height: 52px;
+            }
+
+            .title {
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--black-color);
+                line-height: 32px;
+                margin-bottom: 8px;
+            }
+            .subtitle {
+                font-size: 13px;
+                color: var(--secondary-color);
+                line-height: 20px;
+                margin-bottom: 40px;
+            }
+
+            .section {
+                border-bottom: 1px solid var(--divider-color);
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+            .section-header {
+                font-size: 12px;
+                font-weight: 400;
+                color: var(--gray-color);
+                margin-bottom: 4px;
+            }
+            .section-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--black-color);
+                line-height: 28px;
+                margin-bottom: 12px;
+            }
+            
+            .goal-text {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--black-color);
+                line-height: 28px;
+            }
+            .goal-text span {
+                color: var(--primary-color);
+            }
+            
+            .explanation-text {
+                font-size: 13px;
+                color: var(--secondary-color);
+                line-height: 20px;
+                margin-top: 12px;
+            }
+            
+            .stButton>button {
+                background-color: var(--primary-color);
+                color: white;
+                font-size: 14px;
+                font-weight: 400;
+                border-radius: 12px;
+                padding: 14px 0;
+                border: none;
+                box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
+            }
+            
+            /* 모바일 반응형 스타일 */
+            @media (max-width: 600px) {
+                .main-container {
+                    padding: 1.5rem;
+                    border-radius: 20px;
+                    box-shadow: none;
+                }
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
 def display_and_save_card(plan):
-    """
-    생성된 계획을 카드 형태로 표시하고 이미지 저장 버튼을 추가하는 HTML 컴포넌트를 생성합니다.
-    """
+    """생성된 계획을 카드 형태로 표시하고 이미지 저장 버튼을 추가합니다."""
+    
+    # AI 응답에서 **text** 부분을 <span> 태그로 변환
+    highlighted_outcome = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['outcome_goal'])
+    highlighted_process = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['process_goal'])
+
     card_html = f"""
-    <div id="refocus-plan-card">
-        <div class="result-card when-card">
-            <h3>1. When (상황 및 심리 요약)</h3>
-            <p>{plan['when_summary']}</p>
+    <div id="refocus-plan-card" style="background-color: white; padding: 2rem; border-radius: 32px; font-family: 'Noto Sans KR', sans-serif;">
+        <div class="section">
+            <p class="section-header">When</p>
+            <p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>
+            <p class="explanation-text">{plan['when_summary']}</p>
         </div>
-        <div class="result-card outcome-card">
-            <h3>2. 결과목표 (생각의 전환)</h3>
-            <p>{plan['outcome_goal']}</p>
-            <p class="explanation"><strong>해설:</strong> {plan['outcome_explanation']}</p>
+
+        <div class="section">
+            <p class="section-header">결과 목표</p>
+            <p class="goal-text">"{highlighted_outcome}"</p>
+            <p class="explanation-text">{plan['outcome_explanation']}</p>
         </div>
-        <div class="result-card process-card">
-            <h3>3. 과정목표 (즉각적 행동)</h3>
-            <p>"{plan['process_goal']}"</p>
-            <p class="explanation"><strong>해설:</strong> {plan['process_explanation']}</p>
+
+        <div style="padding-bottom: 20px; margin-bottom: 20px;">
+            <p class="section-header">과정 목표</p>
+            <p class="goal-text">"{highlighted_process}"</p>
+            <p class="explanation-text">{plan['process_explanation']}</p>
         </div>
     </div>
     <br>
-    <button id="save-btn">이미지로 저장 📸</button>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-        
-        #refocus-plan-card, #save-btn {{
-            font-family: 'Noto Sans KR', sans-serif;
-        }}
-
-        .result-card {{
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid;
-            background-color: #f8f9fa;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }}
-        .when-card {{
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
-        }}
-        .outcome-card {{
-            background-color: #e0f2fe;
-            border-color: #7dd3fc;
-        }}
-        .process-card {{
-            background-color: #fff7ed;
-            border-color: #fdba74;
-        }}
-        .result-card h3 {{
-            font-family: 'Noto Sans KR', sans-serif;
-            font-weight: 700;
-            margin-top: 0;
-            color: #1f2937;
-            border-bottom: 2px solid #6b7280;
-            padding-bottom: 10px;
-        }}
-        .result-card p {{
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #333;
-        }}
-        .result-card .explanation {{
-            font-size: 0.9rem;
-            color: #4b5563;
-            font-weight: 400;
-            line-height: 1.6;
-        }}
-        #save-btn {{
-            display: block;
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            background-color: #28a745;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            text-align: center;
-        }}
-        #save-btn:hover {{
-            background-color: #218838;
-        }}
-    </style>
+    <button id="save-btn" style="width: 100%; padding: 14px; font-size: 14px; font-weight: 400; color: white; background-color: #2BA7D1; border: none; border-radius: 12px; cursor: pointer; text-align: center; box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);">결과 저장하기</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
@@ -158,13 +218,13 @@ def display_and_save_card(plan):
         const cardElement = document.getElementById("refocus-plan-card");
         const saveButton = this;
         
-        const originalButtonText = saveButton.innerHTML;
         saveButton.innerHTML = "저장 중...";
         saveButton.disabled = true;
 
         html2canvas(cardElement, {{
             useCORS: true,
-            scale: 2 // 해상도를 높여 이미지 품질 개선
+            scale: 2,
+            backgroundColor: 'white'
         }}).then(canvas => {{
             const image = canvas.toDataURL("image/png");
             const link = document.createElement("a");
@@ -173,59 +233,67 @@ def display_and_save_card(plan):
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            saveButton.innerHTML = originalButtonText;
+            saveButton.innerHTML = "결과 저장하기";
             saveButton.disabled = false;
         }});
     }}
     </script>
     """
-    st.components.v1.html(card_html, height=800, scrolling=True)
+    st.components.v1.html(card_html, height=850, scrolling=True)
 
 # --- 메인 애플리케이션 로직 ---
 def main():
-    st.set_page_config(page_title="나만의 재집중 계획 생성기", page_icon="🚀")
+    st.set_page_config(page_title="재집중 카드 생성기", layout="centered")
+    apply_ui_styles()
 
-    # --- 세션 상태 초기화 ---
     if 'generated_plan' not in st.session_state:
         st.session_state.generated_plan = None
 
-    # --- 헤더 ---
-    st.title("나만의 재집중 계획 수립하기 🚀")
-    st.markdown("예상치 못한 상황에 흔들리지 않도록, 현재에 집중하는 방법을 찾아보세요.")
-    st.divider()
+    icon_path = Path(__file__).parent / "icon.png"
+    icon_base64 = img_to_base64(icon_path)
 
-    # --- API 키 설정 (Secrets에서만 가져오기) ---
-    api_key = None
+    st.markdown('<div class="main-container">', unsafe_allow_html=True)
+
+    if icon_base64:
+        st.markdown(f"""
+            <div class="icon-container">
+                <img src="data:image/png;base64,{icon_base64}" alt="icon">
+            </div>
+        """, unsafe_allow_html=True)
+    st.markdown('<p class="title">재집중 카드</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">나만의 재집중 카드는 흔들린 집중력을 되찾기 위해<br>스스로 활용할 수 있는 훈련 도구입니다.</p>', unsafe_allow_html=True)
+
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
     except (FileNotFoundError, KeyError):
-        st.error("Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다. 앱 관리자에게 문의하거나, 앱 설정에서 API 키를 추가해주세요.")
+        st.error("Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다.")
+        st.markdown('</div>', unsafe_allow_html=True)
         st.stop()
 
-    # --- 사용자 입력 ---
-    st.subheader("1. When: 어떤 상황에서 재집중이 필요한가요?")
-    st.markdown("시합 중 실수, 예상치 못한 방해 등 구체적인 상황과 그때 겪는 어려움을 적어주세요.")
-    situation = st.text_area(
-        "situation_input", 
-        height=150, 
-        placeholder="예시) 축구 경기 막판, 결정적인 페널티킥을 차야 하는 상황입니다. '이걸 놓치면 우리 팀이 진다'는 생각에 다리가 무거워지고 심장이 너무 빨리 뜁니다.",
-        label_visibility="collapsed"
-    )
+    with st.container():
+      st.markdown('<div class="section">', unsafe_allow_html=True)
+      st.markdown('<p class="section-header">When</p>', unsafe_allow_html=True)
+      st.markdown('<p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>', unsafe_allow_html=True)
+      situation = st.text_area(
+          "situation_input",
+          height=120,
+          placeholder="1점차 아슬아슬한 승부 상황에서 ‘내가 잘못 하면 어쩌지'라는 불안감이 앞서서 제대로 집중을 할 수가 없어",
+          label_visibility="collapsed"
+      )
+      st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- 생성 버튼 ---
-    if st.button("재집중 계획 생성하기", type="primary", use_container_width=True):
+
+    if st.button("결과 저장하기", use_container_width=True):
         if not situation.strip():
             st.warning("재집중이 필요한 상황을 입력해주세요.")
+            st.session_state.generated_plan = None
         else:
-            with st.spinner("AI가 맞춤형 계획을 세우고 있습니다... 잠시만 기다려주세요."):
+            with st.spinner("AI가 당신만을 위한 재집중 카드를 만들고 있습니다..."):
                 result_text = get_refocus_plan_from_gemini(api_key, situation)
-                
                 try:
                     if result_text.startswith("오류:") or result_text.startswith("API 요청 중"):
                         raise ValueError(result_text)
-
-                    # 응답 텍스트 파싱
+                    
                     when_summary = result_text.split('[상황 요약]')[1].split('[결과목표]')[0].strip()
                     outcome_goal = result_text.split('[결과목표]')[1].split('[결과목표 해설]')[0].strip()
                     outcome_explanation = result_text.split('[결과목표 해설]')[1].split('[과정목표]')[0].strip()
@@ -240,16 +308,14 @@ def main():
                         "process_explanation": process_explanation
                     }
                 except (IndexError, ValueError) as e:
-                    st.error(f"결과를 처리하는 중 오류가 발생했습니다. 다시 시도해주세요.\n\n오류 내용: {e}")
+                    st.error(f"결과 처리 중 오류가 발생했습니다: {e}")
                     st.session_state.generated_plan = None
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # --- 결과 표시 ---
     if st.session_state.generated_plan:
-        plan = st.session_state.generated_plan
-        st.divider()
-        st.success("카드가 완성되었습니다! 필요할 때마다 꺼내보거나 이미지로 저장하여 활용하세요.")
-        display_and_save_card(plan)
-
+        st.write("")
+        display_and_save_card(st.session_state.generated_plan)
 
 if __name__ == "__main__":
     main()
