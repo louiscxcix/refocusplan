@@ -123,7 +123,7 @@ def apply_ui_styles():
                 font-size: 16px;
                 color: var(--secondary-color);
                 line-height: 24px;
-                margin-bottom: 28px; /* 여백 30% 감소 (40px -> 28px) */
+                margin-bottom: 14px; /* 여백 50% 추가 감소 (28px -> 14px) */
             }
             
             /* 텍스트 입력창 스타일 */
@@ -401,3 +401,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
