@@ -1,9 +1,12 @@
-import streamlit as st
-import requests
-import json
 import base64
-from pathlib import Path
+import json
+import os
 import re
+from pathlib import Path
+
+import requests
+import streamlit as st
+
 
 # --- 이미지 파일을 Base64로 인코딩하는 함수 ---
 def img_to_base_64(image_path):
@@ -12,8 +15,11 @@ def img_to_base_64(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
     except FileNotFoundError:
-        st.warning(f"아이콘 파일을 찾을 수 없습니다: {image_path}. 아이콘 없이 앱을 실행합니다.")
+        st.warning(
+            f"아이콘 파일을 찾을 수 없습니다: {image_path}. 아이콘 없이 앱을 실행합니다."
+        )
         return None
+
 
 # --- API 호출 함수 ---
 def get_refocus_plan_from_gemini(api_key, situation):
@@ -48,15 +54,17 @@ def get_refocus_plan_from_gemini(api_key, situation):
         사용자 입력 상황: "{situation}"
     """
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key={api_key}"
-    headers = {'Content-Type': 'application/json'}
+    headers = {"Content-Type": "application/json"}
     data = {"contents": [{"parts": [{"text": prompt}]}]}
     try:
-        response = requests.post(api_url, headers=headers, data=json.dumps(data), timeout=120)
+        response = requests.post(
+            api_url, headers=headers, data=json.dumps(data), timeout=120
+        )
         response.raise_for_status()
         result = response.json()
-        if 'candidates' in result and result['candidates']:
-            part = result['candidates'][0].get('content', {}).get('parts', [{}])[0]
-            return part.get('text', '오류: 응답에서 텍스트를 찾을 수 없습니다.')
+        if "candidates" in result and result["candidates"]:
+            part = result["candidates"][0].get("content", {}).get("parts", [{}])[0]
+            return part.get("text", "오류: 응답에서 텍스트를 찾을 수 없습니다.")
         else:
             return f"오류: API 응답이 비어있거나 예상치 못한 형식입니다.\n응답 내용: {result}"
     except requests.exceptions.RequestException as e:
@@ -64,10 +72,12 @@ def get_refocus_plan_from_gemini(api_key, situation):
     except Exception as e:
         return f"알 수 없는 오류가 발생했습니다: {e}"
 
+
 # --- UI 스타일링 및 컴포넌트 함수 ---
 def apply_ui_styles():
     """앱 전체에 적용될 CSS 스타일을 정의합니다."""
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
             
@@ -188,14 +198,21 @@ def apply_ui_styles():
                 }
             }
         </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 def display_and_save_card(plan):
     """생성된 계획을 카드 형태로 표시하고 이미지 저장 버튼을 추가합니다."""
-    
+
     # AI 응답에서 **text** 부분을 <span> 태그로 변환
-    highlighted_outcome = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['outcome_goal'])
-    highlighted_process = re.sub(r'\*\*(.*?)\*\*', r'<span>\1</span>', plan['process_goal'])
+    highlighted_outcome = re.sub(
+        r"\*\*(.*?)\*\*", r"<span>\1</span>", plan["outcome_goal"]
+    )
+    highlighted_process = re.sub(
+        r"\*\*(.*?)\*\*", r"<span>\1</span>", plan["process_goal"]
+    )
 
     # HTML 컴포넌트 내부에 스타일을 직접 포함하여 iframe 문제를 해결
     card_html = f"""
@@ -277,19 +294,19 @@ def display_and_save_card(plan):
         <div class="section">
             <p class="section-header">When</p>
             <p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>
-            <p class="explanation-text">{plan['when_summary']}</p>
+            <p class="explanation-text">{plan["when_summary"]}</p>
         </div>
 
         <div class="section">
             <p class="section-header">결과 목표</p>
             <p class="goal-text">"{highlighted_outcome}"</p>
-            <p class="explanation-text">{plan['outcome_explanation']}</p>
+            <p class="explanation-text">{plan["outcome_explanation"]}</p>
         </div>
 
         <div class="section last-section">
             <p class="section-header">과정 목표</p>
             <p class="goal-text">"{highlighted_process}"</p>
-            <p class="explanation-text">{plan['process_explanation']}</p>
+            <p class="explanation-text">{plan["process_explanation"]}</p>
         </div>
     </div>
     
@@ -324,12 +341,13 @@ def display_and_save_card(plan):
     """
     st.components.v1.html(card_html, height=850, scrolling=True)
 
+
 # --- 메인 애플리케이션 로직 ---
 def main():
     st.set_page_config(page_title="재집중 카드 생성기", layout="centered")
     apply_ui_styles()
 
-    if 'generated_plan' not in st.session_state:
+    if "generated_plan" not in st.session_state:
         st.session_state.generated_plan = None
 
     icon_path = Path(__file__).parent / "icon.png"
@@ -338,33 +356,41 @@ def main():
     # st.markdown('<div class="main-container">', unsafe_allow_html=True) # 흰색 배경 컨테이너 제거
 
     if icon_base64:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class="icon-container">
                 <img src="data:image/png;base64,{icon_base64}" alt="icon">
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
     st.markdown('<p class="title">재집중 카드</p>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">나만의 재집중 카드는 흔들린 집중력을 되찾기 위해<br>스스로 활용할 수 있는 훈련 도구입니다.</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="subtitle">나만의 재집중 카드는 흔들린 집중력을 되찾기 위해<br>스스로 활용할 수 있는 훈련 도구입니다.</p>',
+        unsafe_allow_html=True,
+    )
 
     try:
-        api_key = st.secrets["GEMINI_API_KEY"]
+        api_key = os.getenv("GEMINI_API_KEY")
     except (FileNotFoundError, KeyError):
         st.error("Streamlit Secrets에 'GEMINI_API_KEY'가 설정되지 않았습니다.")
         # st.markdown('</div>', unsafe_allow_html=True) # 컨테이너 제거
         st.stop()
 
     with st.container():
-      st.markdown('<div class="section">', unsafe_allow_html=True)
-      st.markdown('<p class="section-header">When</p>', unsafe_allow_html=True)
-      st.markdown('<p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>', unsafe_allow_html=True)
-      situation = st.text_area(
-          "situation_input",
-          height=120,
-          placeholder="1점차 아슬아슬한 승부 상황에서 ‘내가 잘못 하면 어쩌지'라는 불안감이 앞서서 제대로 집중을 할 수가 없어",
-          label_visibility="collapsed"
-      )
-      st.markdown('</div>', unsafe_allow_html=True)
-
+        st.markdown('<div class="section">', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">When</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="section-title">어떤 상황에서<br>재집중이 필요한가요?</p>',
+            unsafe_allow_html=True,
+        )
+        situation = st.text_area(
+            "situation_input",
+            height=120,
+            placeholder="1점차 아슬아슬한 승부 상황에서 ‘내가 잘못 하면 어쩌지'라는 불안감이 앞서서 제대로 집중을 할 수가 없어",
+            label_visibility="collapsed",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
     if st.button("나만의 재집중 계획 만들기", use_container_width=True):
         if not situation.strip():
@@ -374,31 +400,51 @@ def main():
             with st.spinner("AI가 당신만을 위한 재집중 카드를 만들고 있습니다..."):
                 result_text = get_refocus_plan_from_gemini(api_key, situation)
                 try:
-                    if result_text.startswith("오류:") or result_text.startswith("API 요청 중"):
+                    if result_text.startswith("오류:") or result_text.startswith(
+                        "API 요청 중"
+                    ):
                         raise ValueError(result_text)
-                    
-                    when_summary = result_text.split('[상황 요약]')[1].split('[결과목표]')[0].strip()
-                    outcome_goal = result_text.split('[결과목표]')[1].split('[결과목표 해설]')[0].strip()
-                    outcome_explanation = result_text.split('[결과목표 해설]')[1].split('[과정목표]')[0].strip()
-                    process_goal = result_text.split('[과정목표]')[1].split('[과정목표 해설]')[0].strip()
-                    process_explanation = result_text.split('[과정목표 해설]')[1].strip()
-                    
+
+                    when_summary = (
+                        result_text.split("[상황 요약]")[1]
+                        .split("[결과목표]")[0]
+                        .strip()
+                    )
+                    outcome_goal = (
+                        result_text.split("[결과목표]")[1]
+                        .split("[결과목표 해설]")[0]
+                        .strip()
+                    )
+                    outcome_explanation = (
+                        result_text.split("[결과목표 해설]")[1]
+                        .split("[과정목표]")[0]
+                        .strip()
+                    )
+                    process_goal = (
+                        result_text.split("[과정목표]")[1]
+                        .split("[과정목표 해설]")[0]
+                        .strip()
+                    )
+                    process_explanation = result_text.split("[과정목표 해설]")[
+                        1
+                    ].strip()
+
                     st.session_state.generated_plan = {
                         "when_summary": when_summary,
                         "outcome_goal": outcome_goal,
                         "outcome_explanation": outcome_explanation,
                         "process_goal": process_goal,
-                        "process_explanation": process_explanation
+                        "process_explanation": process_explanation,
                     }
                 except (IndexError, ValueError) as e:
                     st.error(f"결과 처리 중 오류가 발생했습니다: {e}")
                     st.session_state.generated_plan = None
-    
+
     # st.markdown('</div>', unsafe_allow_html=True) # 컨테이너 제거
 
     if st.session_state.generated_plan:
         display_and_save_card(st.session_state.generated_plan)
 
+
 if __name__ == "__main__":
     main()
-
