@@ -181,14 +181,21 @@ def apply_ui_styles():
             }
             
             .stButton>button {
-                background-color: var(--primary-color);
-                color: white;
+                background: linear-gradient(135deg, rgba(98, 120.20, 246, 0.20) 0%, rgba(29, 48, 78, 0) 100%), var(--primary-color) !important;
+                color: white !important;
                 font-size: 14px;
                 font-weight: 400;
                 border-radius: 12px;
-                padding: 14px 0;
+                padding: 14px 36px;
                 border: none;
                 box-shadow: 0px 5px 10px rgba(26, 26, 26, 0.10);
+                transition: all 0.3s ease;
+            }
+
+            .stButton>button:hover {
+                background: linear-gradient(135deg, rgba(98, 120.20, 246, 0.30) 0%, rgba(29, 48, 78, 0) 100%), #1A8BB0 !important;
+                box-shadow: 0px 6px 14px rgba(26, 26, 26, 0.15);
+                transform: translateY(-2px);
             }
             
             /* 모바일 반응형 스타일 */
